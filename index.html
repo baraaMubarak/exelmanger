@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2d5a3d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>نظام إدارة البيانات</title>
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+            min-height: 100vh;
+            color: #333;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .container { max-width: 100%; padding: 10px; padding-bottom: 100px; }
+        
+        .install-banner {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 3000;
+            display: none;
+        }
+        
+        .install-banner.show { display: block; }
+        
+        .install-btn {
+            background: white;
+            color: #4caf50;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .header {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 60px;
+        }
+        
+        .header h1 { color: #2d5a3d; font-size: 1.3rem; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 0.85rem; }
+        
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat-box {
+            background: #f0f7f0;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-box-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2d5a3d;
+        }
+        
+        .stat-box-label {
+            font-size: 0.65rem;
+            color: #666;
+        }
+        
+        .upload-section, .data-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 3px dashed #2d5a3d;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8faf8;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+        
+        .upload-area:active { background: #e8f5e9; transform: scale(0.98); }
+        
+        #fileInput { display: none; }
+        
+        .files-list {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f7f0;
+            border-radius: 10px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .search-box { margin-bottom: 15px; }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            margin-bottom: 10px;
+            -webkit-appearance: none;
+        }
+        
+        .search-input:focus { border-color: #2d5a3d; }
+        
+        .search-hint {
+            font-size: 0.75rem;
+            color: #666;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            line-height: 1.8;
+        }
+        
+        .search-hint code {
+            background: #2d5a3d;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background: #2d5a3d;
+            color: white;
+            transition: all 0.3s;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+        }
+        
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-success { background: #4caf50; }
+        .btn-danger { background: #f44336; }
+        .btn-warning { background: #ff9800; }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 50vh;
+            overflow-y: auto;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #2d5a3d;
+            color: white;
+            padding: 12px;
+            text-align: right;
+            position: sticky;
+            top: 0;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+        
+        tr:hover { background: #f5f5f5; }
+        
+        .row-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .row-actions button {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+        }
+        
+        .hidden { display: none !important; }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            width: 100%;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2d5a3d;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            -webkit-appearance: none;
+        }
+        
+        .form-group input:focus {
+            border-color: #2d5a3d;
+            outline: none;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        
+        .columns-info {
+            margin: 15px 0;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 10px;
+        }
+        
+        .columns-info h4 {
+            color: #2d5a3d;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .column-tag {
+            display: inline-block;
+            background: #2d5a3d;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            margin: 2px;
+            font-size: 0.75rem;
+        }
+        
+        .offline-indicator {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: #ff9800;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            display: none;
+        }
+        
+        .offline-indicator.show { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Install Banner -->
+    <div class="install-banner" id="installBanner">
+        📲 ثبت التطبيق على شاشتك الرئيسية
+        <button class="install-btn" onclick="installPWA()">تثبيت</button>
+        <button class="install-btn" onclick="dismissInstall()" style="background: transparent; color: white;">لاحقاً</button>
+    </div>
+    
+    <!-- Offline Indicator -->
+    <div class="offline-indicator" id="offlineIndicator">
+        ⚠️ أنت offline
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>📊 نظام إدارة البيانات</h1>
+            <p>يعمل بدون إنترنت</p>
+            <div class="stats-overview">
+                <div class="stat-box">
+                    <div class="stat-box-number" id="totalCount">0</div>
+                    <div class="stat-box-label">الإجمالي</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-number" id="filteredCount">0</div>
+                    <div class="stat-box-label">البحث</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-number" id="columnsCount">0</div>
+                    <div class="stat-box-label">الأعمدة</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-number" id="filesCount">0</div>
+                    <div class="stat-box-label">الملفات</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" id="uploadArea">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">📁</div>
+                <div style="color: #2d5a3d; font-weight: bold; margin-bottom: 5px;">اضغط لاختيار ملفات Excel</div>
+                <div style="color: #888; font-size: 0.8rem;">يمكنك اختيار عدة ملفات</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" multiple>
+            </div>
+            <div class="files-list hidden" id="filesList">
+                <strong>الملفات المختارة:</strong>
+                <div id="filesContainer"></div>
+                <button class="btn btn-success" onclick="processFiles()" style="margin-top: 10px; width: 100%;">
+                    🚀 معالجة الملفات
+                </button>
+            </div>
+        </div>
+        
+        <div class="data-section hidden" id="dataSection">
+            <div class="columns-info" id="columnsInfo"></div>
+            
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="ابحث... مثال: رب = حمود ، زوج = كنان">
+                <div class="search-hint">
+                    <strong>🔍 أمثلة:</strong>
+                    <code>رب = حمود</code> ← رب الأسرة
+                    <code>زوج = كنان</code> ← الزوجة
+                    <code>اس = احمد</code> ← أي اسم
+                    <code>هو = 000</code> ← أي هوية
+                    <code>عم a< 20</code> ← عمر أقل من 20
+                </div>
+            </div>
+            
+            <div class="actions-bar">
+                <button class="btn btn-success" onclick="showAddModal()">➕ إضافة</button>
+                <button class="btn" onclick="exportData()">📥 تصدير</button>
+                <button class="btn btn-secondary" onclick="resetAll()">🔄 جديد</button>
+            </div>
+            
+            <div class="table-container" id="tableContainer">
+                <div class="empty-state">لا توجد بيانات</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <h2 style="color: #2d5a3d;" id="modalTitle">تعديل</h2>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-success" onclick="saveRecord()" style="flex: 1;">💾 حفظ</button>
+                <button class="btn btn-secondary" onclick="closeModal()" style="flex: 1;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // ==================== PWA ====================
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.add('show');
+        });
+        
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installBanner').classList.remove('show');
+                });
+            }
+        }
+        
+        function dismissInstall() {
+            document.getElementById('installBanner').classList.remove('show');
+        }
+        
+        // Offline detection
+        window.addEventListener('online', () => {
+            document.getElementById('offlineIndicator').classList.remove('show');
+        });
+        
+        window.addEventListener('offline', () => {
+            document.getElementById('offlineIndicator').classList.add('show');
+        });
+        
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => {
+                console.log('Service Worker registered');
+            });
+        }
+        
+        // ==================== APP ====================
+        let allData = [];
+        let filteredData = [];
+        let columns = [];
+        let currentEditId = null;
+        let selectedFiles = [];
+        let filesData = [];
+        
+        const searchAliases = {
+            'رب': ['رب', 'رب الأسرة', 'اسم رب الأسرة', 'رب الاسرة', 'رب الاسره'],
+            'زوج': ['زوج', 'زوجة', 'اسم الزوجة', 'الزوجة', 'زوجه', 'الزوجه'],
+            'اس': ['اسم', 'الاسم', 'الاسم الرباعي', 'الاسم الثلاثي', 'name'],
+            'عم': ['عمر', 'العمر', 'age', 'السن', 'سن'],
+            'هو': ['هوية', 'الهوية', 'رقم الهوية', 'هوي', 'الرقم', 'id', 'رقم'],
+            'تاريخ': ['تاريخ', 'التاريخ', 'date', 'السنة'],
+            'محل': ['محلية', 'المنطقة', 'منطقة', 'العنوان', 'عنوان'],
+            'حال': ['حالة', 'الحالة', 'status']
+        };
+        
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#e8f5e9';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = '#f8faf8';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#f8faf8';
+            if (e.dataTransfer.files.length > 0) {
+                handleFilesSelect(e.dataTransfer.files);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFilesSelect(e.target.files);
+            }
+        });
+        
+        function handleFilesSelect(files) {
+            selectedFiles = Array.from(files).filter(f => 
+                f.name.endsWith('.xlsx') || f.name.endsWith('.xls') || f.name.endsWith('.csv')
+            );
+            
+            if (selectedFiles.length === 0) {
+                alert('الرجاء اختيار ملفات Excel أو CSV فقط');
+                return;
+            }
+            
+            const container = document.getElementById('filesContainer');
+            container.innerHTML = selectedFiles.map((f) => `
+                <div class="file-item">
+                    <span>📄 ${f.name}</span>
+                    <span style="color: #888; font-size: 0.75rem;">${(f.size/1024).toFixed(1)} KB</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('filesList').classList.remove('hidden');
+        }
+        
+        async function processFiles() {
+            filesData = [];
+            
+            for (let file of selectedFiles) {
+                try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    if (jsonData.length === 0) continue;
+                    
+                    const fileColumns = jsonData[0].map((h, i) => h || 'عمود ' + (i + 1));
+                    const fileRows = [];
+                    
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row.length === 0) continue;
+                        
+                        const obj = {};
+                        fileColumns.forEach((col, index) => {
+                            obj[col] = row[index] || '';
+                        });
+                        fileRows.push(obj);
+                    }
+                    
+                    filesData.push({
+                        name: file.name,
+                        columns: fileColumns,
+                        rows: fileRows
+                    });
+                    
+                } catch (error) {
+                    console.error('خطأ في قراءة', file.name, error);
+                }
+            }
+            
+            if (filesData.length === 0) {
+                alert('لم يتم قراءة أي ملف بنجاح');
+                return;
+            }
+            
+            mergeFilesSimple();
+        }
+        
+        function mergeFilesSimple() {
+            const allColumnsSet = new Set();
+            
+            filesData.forEach(file => {
+                file.columns.forEach(col => allColumnsSet.add(col));
+            });
+            
+            columns = Array.from(allColumnsSet);
+            
+            allData = [];
+            let idCounter = 1;
+            
+            filesData.forEach(file => {
+                file.rows.forEach(row => {
+                    const newRow = { 
+                        _id: Date.now() + idCounter++,
+                        _sourceFile: file.name
+                    };
+                    
+                    columns.forEach(col => {
+                        newRow[col] = row[col] || '';
+                    });
+                    
+                    allData.push(newRow);
+                });
+            });
+            
+            filteredData = [...allData];
+            
+            const infoDiv = document.getElementById('columnsInfo');
+            infoDiv.innerHTML = `
+                <h4>✅ ${filesData.length} ملفات - ${columns.length} عمود:</h4>
+                ${columns.map(c => `<span class="column-tag">${c}</span>`).join('')}
+            `;
+            
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('dataSection').classList.remove('hidden');
+            
+            updateStats();
+            renderTable();
+        }
+        
+        function findColumnsByAlias(alias) {
+            for (let key in searchAliases) {
+                if (alias.startsWith(key)) {
+                    const possibleNames = searchAliases[key];
+                    return columns.filter(c => 
+                        possibleNames.some(p => c.toLowerCase().includes(p.toLowerCase()))
+                    );
+                }
+            }
+            return columns.filter(c => c.toLowerCase().includes(alias.toLowerCase()));
+        }
+        
+        function isIdColumn(colName) {
+            return colName && (colName.includes('هوية') || colName.includes('هوي') || colName.includes('رقم'));
+        }
+        
+        function compare(actualValue, operator, searchValue, colName) {
+            let actual = String(actualValue).toLowerCase();
+            let search = String(searchValue).toLowerCase();
+            
+            if (isIdColumn(colName)) {
+                return actual.includes(search);
+            }
+            
+            if (!isNaN(parseFloat(search))) {
+                let actualNum = parseFloat(actualValue);
+                let searchNum = parseFloat(searchValue);
+                
+                if (!isNaN(actualNum) && !isNaN(searchNum)) {
+                    switch(operator) {
+                        case 'a<': return actualNum < searchNum;
+                        case 'a>': return actualNum > searchNum;
+                        case 'a-': return actualNum <= searchNum;
+                        case 'a+': return actualNum >= searchNum;
+                    }
+                }
+            }
+            
+            return actual.includes(search);
+        }
+        
+        function smartSearch(query) {
+            if (!query.trim()) return [...allData];
+            
+            const orParts = query.split('|').map(p => p.trim());
+            
+            return allData.filter(row => {
+                return orParts.some(part => {
+                    const andParts = part.split(/،|,/).map(p => p.trim());
+                    
+                    return andParts.every(condition => {
+                        const isNot = condition.startsWith('-');
+                        if (isNot) condition = condition.substring(1).trim();
+                        
+                        const operators = ['a-', 'a+', 'a<', 'a>', '='];
+                        let foundOperator = null;
+                        let operatorIndex = -1;
+                        
+                        for (let op of operators) {
+                            let idx = condition.indexOf(op);
+                            if (idx !== -1 && (operatorIndex === -1 || idx < operatorIndex)) {
+                                foundOperator = op;
+                                operatorIndex = idx;
+                            }
+                        }
+                        
+                        let targetCols, value;
+                        let result = false;
+                        
+                        if (foundOperator) {
+                            let beforeOp = condition.substring(0, operatorIndex).trim();
+                            let afterOp = condition.substring(operatorIndex + foundOperator.length).trim();
+                            
+                            if (beforeOp) {
+                                targetCols = findColumnsByAlias(beforeOp);
+                                value = afterOp;
+                            } else {
+                                targetCols = columns;
+                                value = afterOp;
+                            }
+                        } else {
+                            targetCols = columns;
+                            value = condition;
+                        }
+                        
+                        if (targetCols.length > 0) {
+                            result = targetCols.some(col => {
+                                let actualValue = row[col] || '';
+                                return compare(actualValue, foundOperator || '=', value, col);
+                            });
+                        }
+                        
+                        return isNot ? !result : result;
+                    });
+                });
+            });
+        }
+        
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            filteredData = smartSearch(e.target.value);
+            updateStats();
+            renderTable();
+        });
+        
+        function updateStats() {
+            document.getElementById('totalCount').textContent = allData.length;
+            document.getElementById('filteredCount').textContent = filteredData.length;
+            document.getElementById('columnsCount').textContent = columns.length;
+            document.getElementById('filesCount').textContent = filesData.length;
+        }
+        
+        function renderTable() {
+            const container = document.getElementById('tableContainer');
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '<div class="empty-state">لا توجد نتائج</div>';
+                return;
+            }
+            
+            let html = '<table><thead><tr>';
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '<th>إجراء</th></tr></thead><tbody>';
+            
+            filteredData.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    html += `<td>${row[col] || ''}</td>`;
+                });
+                html += `<td>
+                    <div class="row-actions">
+                        <button class="btn btn-warning" onclick="editRecord(${row._id})">✏️</button>
+                        <button class="btn btn-danger" onclick="deleteRecord(${row._id})">🗑️</button>
+                    </div>
+                </td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function showAddModal() {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = 'إضافة جديد';
+            buildModalForm({});
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+        
+        function editRecord(id) {
+            currentEditId = id;
+            const record = allData.find(r => r._id === id);
+            document.getElementById('modalTitle').textContent = 'تعديل';
+            buildModalForm(record);
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+        
+        function buildModalForm(data) {
+            const body = document.getElementById('modalBody');
+            body.innerHTML = columns.map(col => `
+                <div class="form-group">
+                    <label>${col}</label>
+                    <input type="text" id="field_${col}" value="${data[col] || ''}">
+                </div>
+            `).join('');
+        }
+        
+        function saveRecord() {
+            const record = { 
+                _id: currentEditId || Date.now(),
+                _sourceFile: 'يدوي'
+            };
+            columns.forEach(col => {
+                record[col] = document.getElementById(`field_${col}`).value;
+            });
+            
+            if (currentEditId) {
+                const index = allData.findIndex(r => r._id === currentEditId);
+                if (index !== -1) allData[index] = record;
+            } else {
+                allData.push(record);
+            }
+            
+            filteredData = [...allData];
+            updateStats();
+            renderTable();
+            closeModal();
+        }
+        
+        function deleteRecord(id) {
+            if (!confirm('هل أنت متأكد من الحذف؟')) return;
+            allData = allData.filter(r => r._id !== id);
+            filteredData = [...allData];
+            updateStats();
+            renderTable();
+        }
+        
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+            currentEditId = null;
+        }
+        
+        function exportData() {
+            const exportData = filteredData.map(({_id, _sourceFile, ...rest}) => rest);
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'البيانات');
+            XLSX.writeFile(wb, 'البيانات.xlsx');
+        }
+        
+        function resetAll() {
+            if (!confirm('سيتم مسح جميع البيانات؟')) return;
+            allData = [];
+            filteredData = [];
+            columns = [];
+            filesData = [];
+            selectedFiles = [];
+            fileInput.value = '';
+            document.getElementById('filesList').classList.add('hidden');
+            document.getElementById('dataSection').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('searchInput').value = '';
+        }
+        
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modalOverlay')) closeModal();
+        });
+    </script>
+</body>
+</html>
